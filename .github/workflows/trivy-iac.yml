@@ -4,6 +4,7 @@ name: Trivy IaC Scan
 # It is triggered only when infra-terraform/ changes.
 
 on:
+  workflow_dispatch: {}
   push:
     paths:
       - 'infra-terraform/**'

@@ -4,6 +4,7 @@ name: Docker Build & Scan
 # and pushes it to ACR only if the build and scan succeed.
 
 on:
+  workflow_dispatch: {}
   push:
     paths:
       - 'learningsteps/**'

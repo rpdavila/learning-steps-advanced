@@ -4,6 +4,7 @@ name: Terraform Static Analysis
 # It is triggered only when files under infra-terraform/ change.
 
 on:
+  workflow_dispatch: {}
   push:
     paths:
       - 'infra-terraform/**'
