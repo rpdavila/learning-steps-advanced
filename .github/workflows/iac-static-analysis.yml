@@ -18,11 +18,11 @@ jobs:
           submodules: false
 
       - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.3.0
+        uses: aquasecurity/tfsec-action@v1.0.3.3.0
         with:
           directory: infra-terraform
 
       - name: Run checkov
-        uses: bridgecrewio/checkov-action@v12
+        uses: bridgecrewio/checkov-action@v12.1347.0
         with:
           directory: infra-terraform
