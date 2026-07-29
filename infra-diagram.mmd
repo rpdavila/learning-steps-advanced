@@ -1,0 +1,77 @@
+flowchart LR
+  %% Azure Infra Diagram (Terraform -> AKS, ACR, Key Vault, PostgreSQL, DNS, NSGs)
+  subgraph RG[Resource Group: ProjectLearningSteps]
+    direction TB
+    subgraph VNet[Virtual Network: myvnet (10.0.0.0/16)]
+      direction TB
+      AKSSubnet["Subnet: AKS-Subnet\n(10.0.0.0/24)"]
+      PostgresSubnet["Subnet: PostgreSQL-Subnet\n(10.0.1.0/24)\nDelegation: PostgreSQL Flexible Server"]
+    end
+
+    ACR["Azure Container Registry\n(learningstepsacr)"]
+    AKS["Azure Kubernetes Service\n(learning-steps-aks)\nSystemAssigned Identity"]
+    KV["Azure Key Vault\n(learning-steps-key-vault)\nRBAC enabled"]
+    PG["Azure Database for PostgreSQL\nFlexible Server\n(private, delegated)"]
+    PDNS["Private DNS Zone\nprivate.postgres.database.azure.com"]
+    NSG_AKS["NSG for AKS Subnet\n(NSG_for_AKS_Subnet)"]
+    NSG_PG["NSG for PostgreSQL\n(NSG_for_PostgreSQL)"]
+  end
+
+  %% Network associations
+  AKSSubnet --- NSG_AKS
+  PostgresSubnet --- NSG_PG
+  VNet --> PDNS
+  PDNS -->|vnet link| VNet
+
+  %% Services placement
+  AKSSubnet --> AKS
+  AKSSubnet --> ACR
+  PostgresSubnet --> PG
+  RG --> KV
+  RG --> ACR
+  RG --> AKS
+  RG --> PG
+
+  %% Identities & role assignments
+  AKSManagedId["AKS Managed Identity\n(identity.principal_id)"]
+  AKSKubeletId["AKS Kubelet Identity\n(kubelet_identity.object_id)"]
+  ACR -- "AcrPull role assigned to" --> AKSKubeletId
+  KV -- "Key Vault Secrets User role for" --> AKSKubeletId
+  KV -- "Key Vault Secrets User role for" --> AKSManagedId
+  KV -- "Key Vault Secrets Officer role for" --> CurrentUser[("Current client (you)")]
+
+  %% Secret flow
+  randomPass["random_password.postgres_rndm_pass\n32 chars"]
+  randomPass --> KVSecret["Key Vault Secret\n(learning-steps-secret)"]
+  KVSecret --> AKS
+  randomPass --> PG
+  PG -->|uses admin credentials from| KVSecret
+
+  %% NSG rules summary (annotated)
+  NSG_AKS ---|Outbound: ACR (443), KeyVault (443), AzureMonitor(443)| AKS
+  NSG_AKS ---|Allow: AzureLoadBalancer| "Azure Load Balancer"
+  NSG_PG ---|Inbound: from AKS 10.0.0.0/24:5432| PG
+
+  %% Private DNS linking
+  PDNS --> PG
+  PDNS --> VNet
+
+  %% Dependencies and ordering notes
+  note_create_rbac[["Terraform: create KeyVault RBAC role assignment\nthen wait ~60s (time_sleep.wait_for_rbac) before writing secret"]]
+  note_create_rbac --> KVSecret
+
+  classDef resource fill:#f2f8ff,stroke:#0366d6,stroke-width:1px;
+  classDef network fill:#f8f9fb,stroke:#6c757d,stroke-width:1px;
+  class AKS,ACR,KV,PG,AKSManagedId,AKSKubeletId,ACR resource;
+  class VNet,AKSSubnet,PostgresSubnet,NSG_AKS,NSG_PG,PDNS network;
+
+  %% Legend
+  subgraph Legend[Legend]
+    direction TB
+    L1["RG: Resource Group"]
+    L2["VNet: Virtual Network with subnets"]
+    L3["AKS: Azure Kubernetes Service"]
+    L4["ACR: Azure Container Registry"]
+    L5["KV: Azure Key Vault (RBAC) and secrets"]
+    L6["PG: Azure Database for PostgreSQL (Flexible Server)"]
+  end

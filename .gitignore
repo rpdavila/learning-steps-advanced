@@ -1,0 +1,61 @@
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+*.tfplan.*
+*.tfvars
+*.tfvars.*
+terraform.tfvars
+terraform.tfvars.json
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Azure and secrets
+**/.env
+**/.env.*
+**/.azure/
+**/*.key
+**/*.pem
+**/*.pfx
+
+# Python
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+**/.Python
+**/env/
+**/venv/
+**/.venv/
+**/ENV/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.pytype/
+**/.cache/
+**/pip-log.txt
+
+# Editor and tool files
+**/.vscode/
+**/.idea/
+**/.DS_Store
+**/.history/
+
+# Docker
+**/docker-compose.override.yml
+**/docker-compose.override.yaml
+
+# Git metadata (nested repos)
+**/.git/
+
+# Build and misc
+**/build/
+**/dist/
+**/.eggs/
+**/*.egg-info/
+**/.pytest_cache/
+**/htmlcov/

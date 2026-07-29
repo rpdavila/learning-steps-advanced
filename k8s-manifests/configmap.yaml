@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: learningsteps-env
+data:
+  .env: |
+    DATABASE_URL=postgresql://learningsteps:password@postgres:5432/learningstepsdb
+    # Add other env vars here if needed

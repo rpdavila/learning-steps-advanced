@@ -1,0 +1,109 @@
+<mxfile host="65bd71144e">
+    <diagram id="0" name="Azure Infra">
+        <mxGraphModel dx="1165" dy="623" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="rg" value="Resource Group: ProjectLearningSteps" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F7FF;strokeColor=#2B6CB0;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="20" width="1120" height="980" as="geometry"/>
+                </mxCell>
+                <mxCell id="vnet" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F8FAFF;strokeColor=#6C757D;" parent="rg" vertex="1">
+                    <mxGeometry x="50" y="60" width="760" height="420" as="geometry"/>
+                </mxCell>
+                <mxCell id="subnet_aks" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#888888;" parent="vnet" vertex="1">
+                    <mxGeometry x="40" y="40" width="320" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="subnet_pg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#888888;" parent="vnet" vertex="1">
+                    <mxGeometry x="400" y="40" width="320" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="acr" value="Azure Container Registry\n(learningstepsacr)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF6E5;strokeColor=#FFB020;" parent="vnet" vertex="1">
+                    <mxGeometry x="50" y="290" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="pg" value="PostgreSQL Flexible Server\n(private, delegated)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFF0F6;strokeColor=#D9467C;" parent="vnet" vertex="1">
+                    <mxGeometry x="430" y="80" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;Virtual Network: myvnet\n(10.0.0.0/16)&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="vnet">
+                    <mxGeometry x="50" width="280" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="aks" value="Azure Kubernetes Service\n(learning-steps-aks)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#E8F4FF;strokeColor=#1E90FF;" parent="vnet" vertex="1">
+                    <mxGeometry x="60" y="80" width="280" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;AKS Subnet 10.0.0.0/24&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="vnet">
+                    <mxGeometry x="60" y="40" width="230" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="&lt;span style=&quot;color: rgb(0, 0, 0);&quot;&gt;PostgreSQL Subnet 10.0.1.0/24Delegation: PostgreSQL&lt;/span&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="vnet">
+                    <mxGeometry x="440" y="40" width="260" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/containers/Container_Registries.svg;" vertex="1" parent="vnet">
+                    <mxGeometry x="50" y="290" width="33.44" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/containers/Kubernetes_Services.svg;" vertex="1" parent="vnet">
+                    <mxGeometry x="60" y="80" width="34" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/databases/Azure_Database_PostgreSQL_Server.svg;" vertex="1" parent="vnet">
+                    <mxGeometry x="430" y="80" width="22.5" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="pdns" value="Private DNS Zone\nprivate.postgres.database.azure.com" style="shape=square;whiteSpace=wrap;html=1;fillColor=#F0FFF4;strokeColor=#059669;" parent="rg" vertex="1">
+                    <mxGeometry x="850" y="60" width="260" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="kv" value="Azure Key Vault\n(learning-steps-key-vault)\nRBAC enabled" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#F8F0FF;strokeColor=#7C3AED;" parent="rg" vertex="1">
+                    <mxGeometry x="860" y="240" width="220" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="kubelet_id" value="AKS Kubelet Identity\n(kubelet_identity.object_id)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;" parent="rg" vertex="1">
+                    <mxGeometry x="860" y="360" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="managed_id" value="AKS Managed Identity\n(identity.principal_id)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;" parent="rg" vertex="1">
+                    <mxGeometry x="860" y="440" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_acr_kubelet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#888888;" parent="rg" source="acr" target="kubelet_id" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_kv_kubelet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#888888;" parent="rg" source="kv" target="kubelet_id" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_kv_managed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#888888;" parent="rg" source="kv" target="managed_id" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="random_pass" value="random_password.postgres_rndm_pass\n(32 chars)" style="shape=note;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#F97316;" parent="rg" vertex="1">
+                    <mxGeometry x="60" y="580" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="kv_secret" value="Key Vault Secret\n(learning-steps-secret)" style="shape=rectangle;whiteSpace=wrap;html=1;fillColor=#FEF3F3;strokeColor=#EF4444;" parent="rg" vertex="1">
+                    <mxGeometry x="320" y="520" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_pass_kv" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#888888;" parent="rg" source="random_pass" target="kv_secret" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_kv_aks" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#888888;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="rg" source="kv_secret" target="aks" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_pass_pg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#888888;" parent="rg" source="random_pass" target="pg" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_pdns_vnet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;" parent="rg" source="pdns" target="vnet" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="edge_pdns_pg" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#059669;" parent="rg" source="pdns" target="pg" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="note_rbac" value="Terraform: assign Key Vault RBAC then wait ~60s (time_sleep.wait_for_rbac) before writing secret" style="shape=note;whiteSpace=wrap;html=1;fillColor=#EEF2FF;strokeColor=#6366F1;" parent="rg" vertex="1">
+                    <mxGeometry x="60" y="680" width="380" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="nsg_aks" value="NSG: NSG_for_AKS_Subnet" style="shape=label;whiteSpace=wrap;html=1;" parent="rg" vertex="1">
+                    <mxGeometry x="590" y="610" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="nsg_pg" value="NSG: NSG_for_PostgreSQL" style="shape=label;whiteSpace=wrap;html=1;" parent="rg" vertex="1">
+                    <mxGeometry x="860" y="610" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/security/Key_Vaults.svg;" vertex="1" parent="rg">
+                    <mxGeometry x="860" y="240" width="20" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/networking/Network_Security_Groups.svg;" vertex="1" parent="rg">
+                    <mxGeometry x="590" y="610" width="24.71" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/networking/Network_Security_Groups.svg;" vertex="1" parent="rg">
+                    <mxGeometry x="860" y="610" width="24.71" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

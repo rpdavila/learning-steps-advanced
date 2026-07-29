@@ -1,0 +1,24 @@
+name: Trivy IaC Scan
+
+on:
+  push:
+    paths:
+      - 'infra-terraform/**'
+  pull_request:
+    paths:
+      - 'infra-terraform/**'
+
+jobs:
+  trivy-iac:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC scan
+        uses: aquasecurity/trivy-action@v0.2.0
+        with:
+          scan-type: 'fs'
+          input: 'infra-terraform'
+          security-checks: 'config'
+          exit-code: '1'

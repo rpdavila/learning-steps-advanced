@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: learningsteps-api
+  namespace: learningsteps
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: learningsteps-api
+
+  template:
+    metadata:
+      labels:
+        app: learningsteps-api
+
+    spec:
+      containers:
+      - name: learningsteps-api
+        image: learningstepsacr.azurecr.io/learningsteps:v2
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+        ports:
+        - containerPort: 8000
+
+        env:
+          - name: POSTGRES_USER
+            value: learningsteps
+          - name: POSTGRES_HOST
+            value: postgresql-database
+          - name: POSTGRES_DB
+            value: learningstepsdb
+          - name: DATABASE_URL
+            value: "postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):5432/$(POSTGRES_DB)"
+
+        envFrom:
+          - secretRef:
+              name: learningsteps-db-secret
+
+        command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+        volumeMounts:
+          - name: secrets-store-inline
+            mountPath: /mnt/secrets-store
+            readOnly: true
+
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "learningsteps-keyvault"
