@@ -14,10 +14,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: false
 
       - name: Run Trivy IaC scan
         uses: aquasecurity/trivy-action@v0.2.0
         with:
           scan-type: 'fs'
-          args: 'infra-terraform --security-checks config'
+          scan-ref: 'infra-terraform'
+          args: '--security-checks config'
           exit-code: '1'
+          format: 'table'
+          hide-progress: 'true'
