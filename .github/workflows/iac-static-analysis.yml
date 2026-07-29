@@ -1,5 +1,8 @@
 name: Terraform Static Analysis
 
+# This workflow runs Terraform static analysis tools on changed infrastructure files.
+# It is triggered only when files under infra-terraform/ change.
+
 on:
   push:
     paths:
@@ -10,19 +13,20 @@ on:
 
 jobs:
   tfsec-checkov:
+    name: Run tfsec and checkov on Terraform
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository without submodules
         uses: actions/checkout@v4
         with:
           submodules: false
 
-      - name: Run tfsec
-        uses: aquasecurity/tfsec-action@v1.0.3.3.0
+      - name: Run tfsec Terraform scan
+        uses: aquasecurity/tfsec-action@v1.0.3
         with:
           directory: infra-terraform
 
-      - name: Run checkov
+      - name: Run checkov Terraform scan
         uses: bridgecrewio/checkov-action@v12.1347.0
         with:
           directory: infra-terraform

@@ -1,5 +1,8 @@
 name: Trivy IaC Scan
 
+# This workflow runs Trivy in filesystem mode against infra-terraform/ to detect IaC misconfigurations.
+# It is triggered only when infra-terraform/ changes.
+
 on:
   push:
     paths:
@@ -10,14 +13,15 @@ on:
 
 jobs:
   trivy-iac:
+    name: Run Trivy IaC scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository without submodules
         uses: actions/checkout@v4
         with:
           submodules: false
 
-      - name: Run Trivy IaC scan
+      - name: Run Trivy filesystem IaC scan
         uses: aquasecurity/trivy-action@v0.2.0
         with:
           scan-type: 'fs'

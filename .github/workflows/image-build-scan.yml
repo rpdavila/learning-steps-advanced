@@ -1,5 +1,8 @@
 name: Docker Build & Scan
 
+# This workflow builds the Docker image from learningsteps/, scans it with Trivy,
+# and pushes it to ACR only if the build and scan succeed.
+
 on:
   push:
     paths:
@@ -10,11 +13,12 @@ on:
 
 jobs:
   build-scan-push:
+    name: Build, scan, and push Docker image
     runs-on: ubuntu-latest
     env:
       IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }}
     steps:
-      - name: Checkout
+      - name: Checkout repository without submodules
         uses: actions/checkout@v4
         with:
           submodules: false
