@@ -19,6 +19,5 @@ jobs:
         uses: aquasecurity/trivy-action@v0.2.0
         with:
           scan-type: 'fs'
-          input: 'infra-terraform'
-          security-checks: 'config'
+          args: 'infra-terraform --security-checks config'
           exit-code: '1'
