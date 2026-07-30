@@ -21,7 +21,7 @@ variable "postgres_user" {
 
 variable "postgres_password" {
   type    = string
-  default = "postgres"
+  sensitive = true
 }
 
 variable "postgres_db_name" {
