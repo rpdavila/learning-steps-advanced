@@ -1,0 +1,103 @@
+name: Terraform CI
+
+on:
+  pull_request:
+    paths:
+      - 'infra-terraform/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'infra-terraform/**'
+  workflow_dispatch: {}
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository without submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        working-directory: infra-terraform
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        working-directory: infra-terraform
+        run: terraform validate || true
+
+      - name: Terraform Plan (write binary plan)
+        working-directory: infra-terraform
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Save plan JSON
+        working-directory: infra-terraform
+        run: terraform show -no-color -json tfplan > tfplan.json
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: |
+            infra-terraform/tfplan
+            infra-terraform/tfplan.json
+
+  apply:
+    name: Terraform Apply
+    needs: plan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - name: Checkout repository without submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Download plan artifact (if present)
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: infra-terraform
+        continue-on-error: true
+
+      - name: Terraform Apply (use plan if available)
+        working-directory: infra-terraform
+        env:
+          ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+          ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+        run: |
+          set -e
+          if [ -f tfplan ]; then
+            terraform init -input=false
+            terraform apply -input=false tfplan
+          else
+            terraform init -input=false
+            terraform plan -input=false -out=tfplan
+            terraform apply -input=false tfplan
+          fi
+
+# Notes:
+# - Create the repository secret `AZURE_CREDENTIALS` (JSON with clientId, clientSecret, subscriptionId, tenantId)
+#   for the `azure/login` action. If you use an Azure backend with storage account keys, add those secrets too.
+# - Create a protected environment named `production` with required reviewers to prevent automatic applies.
