@@ -92,7 +92,7 @@ jobs:
       - name: Checkout app repository
         uses: actions/checkout@v5
         with:
-          repository: CyberstepsDE/learningsteps
+          repository: rpdavila/learningsteps
 
       - name: Install trufflehog
         run: |
