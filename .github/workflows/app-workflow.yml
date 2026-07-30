@@ -1,223 +1,104 @@
-name: Application CI/CD Pipeline
+name: App CI and Docker Build
 
 on:
-  push:
-    branches:
-      - main
-      - master
-    paths:
-      - "app/**"
-      - "k8s/**"
-      - ".github/workflows/app-pipeline.yml"
-  pull_request:
-    branches:
-      - main
-      - master
-    paths:
-      - "app/**"
-      - "k8s/**"
-  workflow_dispatch:
-
-env:
-  IMAGE_NAME: learningsteps-api
-  WORKING_DIR: app
-  NAMESPACE: learningsteps
+  workflow_dispatch: {}
 
 jobs:
-  # ==================================================
-  # Step 1: Code Security Scan
-  # ==================================================
-  code-scan:
-    name: Scan Code for Vulnerabilities
+  build:
+    name: App build and test
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy code scan
-        uses: aquasecurity/trivy-action@master
+      - name: Checkout app repository
+        uses: actions/checkout@v5
         with:
-          scan-type: "fs"
-          scan-ref: "./app"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
+          repository: rpdavila/learningsteps
 
-  # ==================================================
-  # Step 2: Build, Scan & Push Image
-  # ==================================================
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install -r ./api/requirements.txt
+          pip install ruff pytest
+
+      - name: Lint with ruff
+        run: ruff check ./api
+
+      - name: Run pytest
+        run: python -m pytest ./api
+
+
   build-scan-push:
-    name: Build, Scan & Push Image
+    name: Build, scan, and push Docker image
     runs-on: ubuntu-latest
-    needs: code-scan
+    needs: [build]
+
+    env:
+      IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout app repository
+        uses: actions/checkout@v5
+        with:
+          repository: rpdavila/learningsteps
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v2
 
-      - name: Login to ACR
-        uses: docker/login-action@v3
+      - name: Azure login
+        uses: azure/login@v1
         with:
-          registry: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build Docker image
-        working-directory: ${{ env.WORKING_DIR }}
+      - name: Login to Azure Container Registry
         run: |
-          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} .
-          echo "✅ Image built successfully"
+          ACR_NAME=${{ secrets.ACR_LOGIN_SERVER }}
+          az acr login --name "$ACR_NAME"
 
-      - name: Run Trivy image scan (CRITICAL GATE)
-        uses: aquasecurity/trivy-action@master
+      - name: Build image
+        uses: docker/build-push-action@v4
         with:
-          image-ref: "${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}"
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL"
-          ignore-unfixed: true
+          push: false
+          tags: ${{ env.IMAGE }}
+          context: .
+          file: ./Dockerfile
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@v0.2.0
+        with:
+          image-ref: ${{ env.IMAGE }}
+          format: table
+          exit-code: '1'
 
       - name: Push image to ACR
-        run: |
-          docker push ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}
-          echo "✅ Image pushed to ACR with tag ${{ github.run_number }}"
-
-      - name: Save image tag
-        run: echo "${{ github.run_number }}" > image_tag.txt
-
-      - name: Upload image tag artifact
-        uses: actions/upload-artifact@v4
+        if: success()
+        uses: docker/build-push-action@v4
         with:
-          name: image-tag
-          path: image_tag.txt
-          retention-days: 1
+          push: true
+          tags: ${{ env.IMAGE }}
+          context: .
 
-  # ==================================================
-  # Step 3: Configure Kubernetes Access
-  # ==================================================
-  setup-kubernetes:
-    name: Configure Kubernetes Access
+
+  secret-scan:
+    name: Run secret scan
     runs-on: ubuntu-latest
-    needs: build-scan-push
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
-      - name: Set up kubectl
-        run: |
-          kubectl config set-cluster k8s-cluster \
-            --server=${{ secrets.K8S_SERVER }} \
-            --insecure-skip-tls-verify=true
-
-          kubectl config set-credentials github-deployer \
-            --token=${{ secrets.K8S_TOKEN }}
-
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
-            --user=github-deployer \
-            --namespace=${{ env.NAMESPACE }}
-
-          kubectl config use-context k8s-context
-
-      - name: Verify cluster access
-        run: |
-          kubectl get pods -n ${{ env.NAMESPACE }} || echo "Namespace ready for deployment"
-
-  # ==================================================
-  # Step 4: Deploy to Kubernetes
-  # ==================================================
-  deploy-to-kubernetes:
-    name: Deploy to AKS
-    runs-on: ubuntu-latest
-    needs: setup-kubernetes
-    environment: production
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Download image tag
-        uses: actions/download-artifact@v4
+      - name: Checkout app repository
+        uses: actions/checkout@v5
         with:
-          name: image-tag
+          repository: rpdavila/learningsteps
 
-      - name: Set image tag variable
+      - name: Install trufflehog
         run: |
-          IMAGE_TAG=$(cat image_tag.txt)
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          python -m pip install --upgrade pip
+          pip install trufflehog
 
-      - name: Set up kubectl
+      - name: Run trufflehog filesystem scan
         run: |
-          kubectl config set-cluster k8s-cluster \
-            --server=${{ secrets.K8S_SERVER }} \
-            --insecure-skip-tls-verify=true
-
-          kubectl config set-credentials github-deployer \
-            --token=${{ secrets.K8S_TOKEN }}
-
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
-            --user=github-deployer \
-            --namespace=${{ env.NAMESPACE }}
-
-          kubectl config use-context k8s-context
-
-      - name: Deploy application
-        env:
-          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-          NAMESPACE: ${{ env.NAMESPACE }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-        run: |
-          # Update deployment with new image tag
-          sed "s|image:.*learningsteps-api:.*|image: ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:${IMAGE_TAG}|g" \
-            k8s/deployment.yaml | kubectl apply -n ${NAMESPACE} -f -
-
-          # Apply service
-          kubectl apply -n ${NAMESPACE} -f k8s/service.yaml
-
-          echo "✅ Deployment and service applied"
-
-  # ==================================================
-  # Step 5: Verify Deployment
-  # ==================================================
-  verify-deployment:
-    name: Verify Deployment Success
-    runs-on: ubuntu-latest
-    needs: deploy-to-kubernetes
-
-    steps:
-      - name: Set up kubectl
-        run: |
-          kubectl config set-cluster k8s-cluster \
-            --server=${{ secrets.K8S_SERVER }} \
-            --insecure-skip-tls-verify=true
-
-          kubectl config set-credentials github-deployer \
-            --token=${{ secrets.K8S_TOKEN }}
-
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
-            --user=github-deployer \
-            --namespace=${{ env.NAMESPACE }}
-
-          kubectl config use-context k8s-context
-
-      - name: Wait for rollout
-        run: |
-          kubectl rollout status deployment/learningsteps-api -n ${{ env.NAMESPACE }}
-
-      - name: Check pods
-        run: |
-          kubectl get pods -l app=learningsteps-api -n ${{ env.NAMESPACE }}
-
-      - name: Check service
-        run: |
-          kubectl get svc learningsteps-api -n ${{ env.NAMESPACE }}
-
-      - name: Deployment complete
-        run: |
-          echo "✅ Deployment verified and successful!"
+          trufflehog filesystem --repo_path . --entropy false
