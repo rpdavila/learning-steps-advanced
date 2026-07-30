@@ -12,7 +12,7 @@ jobs:
       - name: Checkout app repository
         uses: actions/checkout@v5
         with:
-          repository: YOUR_OWNER/learningsteps
+          repository: rpdavila/learningsteps
 
       - uses: actions/setup-python@v6
         with:
