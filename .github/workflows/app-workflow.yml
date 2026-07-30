@@ -42,7 +42,7 @@ jobs:
       - name: Checkout app repository
         uses: actions/checkout@v5
         with:
-          repository: YOUR_OWNER/learningsteps
+          repository: rpdavila/learningsteps
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
