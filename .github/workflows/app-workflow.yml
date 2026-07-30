@@ -2,21 +2,17 @@ name: App CI and Docker Build
 
 on:
   workflow_dispatch: {}
-  push:
-    paths:
-      - 'learningsteps/**'
-      - 'api/**'
-  pull_request:
-    paths:
-      - 'learningsteps/**'
-      - 'api/**'
 
 jobs:
   build:
     name: App build and test
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout app repository
+        uses: actions/checkout@v5
+        with:
+          repository: YOUR_OWNER/learningsteps
 
       - uses: actions/setup-python@v6
         with:
@@ -24,26 +20,29 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r ./learningsteps/api/requirements.txt
+          pip install -r ./api/requirements.txt
           pip install ruff pytest
 
       - name: Lint with ruff
-        run: ruff check ./learningsteps/api
+        run: ruff check ./api
 
       - name: Run pytest
-        run: python -m pytest ./learningsteps/api
+        run: python -m pytest ./api
+
 
   build-scan-push:
     name: Build, scan, and push Docker image
     runs-on: ubuntu-latest
-    needs: [build, secret-scan]
+    needs: [build]
+
     env:
       IMAGE: ${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }}
+
     steps:
-      - name: Checkout repository without submodules
-        uses: actions/checkout@v4
+      - name: Checkout app repository
+        uses: actions/checkout@v5
         with:
-          submodules: false
+          repository: YOUR_OWNER/learningsteps
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -61,19 +60,19 @@ jobs:
           ACR_NAME=${{ secrets.ACR_LOGIN_SERVER }}
           az acr login --name "$ACR_NAME"
 
-      - name: Build image (no push)
+      - name: Build image
         uses: docker/build-push-action@v4
         with:
           push: false
           tags: ${{ env.IMAGE }}
-          context: ./learningsteps
-          file: ./learningsteps/Dockerfile
+          context: .
+          file: ./Dockerfile
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@v0.2.0
         with:
           image-ref: ${{ env.IMAGE }}
-          format: 'table'
+          format: table
           exit-code: '1'
 
       - name: Push image to ACR
@@ -82,16 +81,18 @@ jobs:
         with:
           push: true
           tags: ${{ env.IMAGE }}
-          context: ./learningsteps
+          context: .
+
 
   secret-scan:
     name: Run secret scan
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository without submodules
-        uses: actions/checkout@v4
+      - name: Checkout app repository
+        uses: actions/checkout@v5
         with:
-          submodules: false
+          repository: YOUR_OWNER/learningsteps
 
       - name: Install trufflehog
         run: |

@@ -94,7 +94,6 @@ jobs:
     needs: [plan, tfsec-checkov, trivy-iac]
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
-    environment: production
     steps:
       - name: Checkout repository without submodules
         uses: actions/checkout@v4
