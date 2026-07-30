@@ -6,39 +6,40 @@ on:
       - main
       - master
     paths:
-      - "learningsteps/**"
       - "k8s-manifests/**"
       - ".github/workflows/app-pipeline.yml"
-
   pull_request:
     branches:
       - main
       - master
     paths:
-      - "learningsteps/**"
       - "k8s-manifests/**"
-
   workflow_dispatch:
 
 env:
   IMAGE_NAME: learningsteps-api
-  WORKING_DIR: learningsteps
+  APP_DIR: learningsteps
   K8S_DIR: k8s-manifests
   NAMESPACE: learningsteps
-
 
 jobs:
 
   # ==================================================
-  # Step 1: Code Security Scan
+  # Step 1: Checkout and Security Scan
   # ==================================================
   code-scan:
     name: Scan Application Code
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout deployment repository
         uses: actions/checkout@v4
+
+      - name: Checkout LearningSteps application repository
+        uses: actions/checkout@v4
+        with:
+          repository: rpdavila/learningsteps
+          path: learningsteps
 
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@master
@@ -46,29 +47,40 @@ jobs:
           scan-type: fs
           scan-ref: ./learningsteps
           format: table
-          exit-code: "1"
+          exit-code: 1
           severity: CRITICAL,HIGH
 
 
   # ==================================================
-  # Step 2: Build, Scan & Push Image
+  # Step 2: Build, Scan & Push Docker Image
   # ==================================================
   build-scan-push:
-    name: Build, Scan & Push Docker Image
+    name: Build, Scan & Push Image
     runs-on: ubuntu-latest
     needs: code-scan
 
     steps:
 
-      - name: Checkout code
+      - name: Checkout deployment repository
         uses: actions/checkout@v4
 
+      - name: Checkout LearningSteps application repository
+        uses: actions/checkout@v4
+        with:
+          repository: rpdavila/learningsteps
+          path: learningsteps
 
-      - name: Set up Docker Buildx
+      - name: Verify application files
+        run: |
+          ls -la learningsteps
+          ls -la learningsteps/api
+
+
+      - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
 
-      - name: Login to ACR
+      - name: Login to Azure Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
@@ -77,20 +89,20 @@ jobs:
 
 
       - name: Build Docker image
-        working-directory: ${{ env.WORKING_DIR }}
         run: |
           docker build \
-            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} .
+            -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }} \
+            ./learningsteps
 
-          echo "✅ Docker image built"
+          echo "Image built successfully"
 
 
-      - name: Scan Docker image with Trivy
+      - name: Trivy image scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}
+          image-ref: "${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}"
           format: table
-          exit-code: "1"
+          exit-code: 1
           severity: CRITICAL
           ignore-unfixed: true
 
@@ -99,8 +111,6 @@ jobs:
         run: |
           docker push \
           ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:${{ github.run_number }}
-
-          echo "✅ Image pushed"
 
 
       - name: Save image tag
@@ -124,29 +134,29 @@ jobs:
     name: Configure Kubernetes Access
     runs-on: ubuntu-latest
     needs: build-scan-push
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
 
     steps:
 
       - name: Configure kubectl
         run: |
-          kubectl config set-cluster k8s-cluster \
+          kubectl config set-cluster aks-cluster \
             --server=${{ secrets.K8S_SERVER }} \
             --insecure-skip-tls-verify=true
 
           kubectl config set-credentials github-deployer \
             --token=${{ secrets.K8S_TOKEN }}
 
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
+          kubectl config set-context aks-context \
+            --cluster=aks-cluster \
             --user=github-deployer \
             --namespace=${{ env.NAMESPACE }}
 
-          kubectl config use-context k8s-context
+          kubectl config use-context aks-context
 
 
-      - name: Verify cluster access
+      - name: Verify access
         run: |
           kubectl get pods -n ${{ env.NAMESPACE }} || true
 
@@ -164,7 +174,7 @@ jobs:
 
     steps:
 
-      - name: Checkout code
+      - name: Checkout deployment repository
         uses: actions/checkout@v4
 
 
@@ -176,49 +186,43 @@ jobs:
 
       - name: Set image tag
         run: |
-          IMAGE_TAG=$(cat image_tag.txt)
-          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-
+          echo "IMAGE_TAG=$(cat image_tag.txt)" >> $GITHUB_ENV
 
 
       - name: Configure kubectl
         run: |
-          kubectl config set-cluster k8s-cluster \
+          kubectl config set-cluster aks-cluster \
             --server=${{ secrets.K8S_SERVER }} \
             --insecure-skip-tls-verify=true
 
           kubectl config set-credentials github-deployer \
             --token=${{ secrets.K8S_TOKEN }}
 
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
+          kubectl config set-context aks-context \
+            --cluster=aks-cluster \
             --user=github-deployer \
             --namespace=${{ env.NAMESPACE }}
 
-          kubectl config use-context k8s-context
+          kubectl config use-context aks-context
 
 
 
-      - name: Deploy application
+      - name: Deploy manifests
         env:
           ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
-          NAMESPACE: ${{ env.NAMESPACE }}
 
         run: |
 
-          sed "s|image:.*learningsteps-api:.*|image: ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:${IMAGE_TAG}|g" \
+          sed \
+          "s|image:.*learningsteps-api:.*|image: ${ACR_LOGIN_SERVER}/${IMAGE_NAME}:${IMAGE_TAG}|g" \
           ${{ env.K8S_DIR }}/deployment.yaml \
-          | kubectl apply -n ${NAMESPACE} -f -
-
+          | kubectl apply -n ${{ env.NAMESPACE }} -f -
 
           kubectl apply \
-          -n ${NAMESPACE} \
+          -n ${{ env.NAMESPACE }} \
           -f ${{ env.K8S_DIR }}/service.yaml
-
-
-          echo "✅ Kubernetes deployment applied"
 
 
 
@@ -233,49 +237,25 @@ jobs:
 
     steps:
 
-      - name: Configure kubectl
-        run: |
-          kubectl config set-cluster k8s-cluster \
-            --server=${{ secrets.K8S_SERVER }} \
-            --insecure-skip-tls-verify=true
-
-          kubectl config set-credentials github-deployer \
-            --token=${{ secrets.K8S_TOKEN }}
-
-          kubectl config set-context k8s-context \
-            --cluster=k8s-cluster \
-            --user=github-deployer \
-            --namespace=${{ env.NAMESPACE }}
-
-          kubectl config use-context k8s-context
-
-
-
-      - name: Wait for rollout
+      - name: Verify rollout
         run: |
           kubectl rollout status \
           deployment/learningsteps-api \
           -n ${{ env.NAMESPACE }}
 
 
-
       - name: Check pods
         run: |
           kubectl get pods \
-          -l app=learningsteps-api \
           -n ${{ env.NAMESPACE }}
-
 
 
       - name: Check service
         run: |
           kubectl get svc \
-          learningsteps-api \
           -n ${{ env.NAMESPACE }}
 
 
-
-      - name: Deployment complete
+      - name: Success
         run: |
-          echo "✅ Deployment verified successfully"
-
+          echo "Deployment completed successfully"
