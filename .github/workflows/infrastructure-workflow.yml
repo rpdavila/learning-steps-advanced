@@ -111,7 +111,7 @@ jobs:
             -backend-config="resource_group_name=${{ secrets.BACKEND_RESOURCE_GROUP }}" \
             -backend-config="storage_account_name=${{ secrets.BACKEND_STORAGE_ACCOUNT }}" \
             -backend-config="container_name=${{ secrets.BACKEND_CONTAINER_NAME }}" \
-            -backend-config="key=terraform.tfstate"   
+            -backend-config="key=learningsteps.tfstate"   
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
