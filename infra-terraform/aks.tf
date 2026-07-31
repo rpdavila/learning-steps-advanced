@@ -9,6 +9,10 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     type = "SystemAssigned"
   }
 
+   api_server_access_profile {
+    authorized_ip_ranges = [ "93.222.255.160/32" ]
+  }
+
   key_vault_secrets_provider {
     secret_rotation_enabled = true
   }
