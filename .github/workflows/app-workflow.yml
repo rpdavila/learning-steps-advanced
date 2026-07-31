@@ -66,16 +66,16 @@ jobs:
       - name: Deploy application
         run: |          
           # set up name space
-          kubectl apply -f k8s-manifests/namespace.yaml
+          kubectl apply -f namespace.yaml
           
           # setup secrets
-          kubectl apply -f k8s-manifests/secretsproviderclass.yaml
+          kubectl apply -f secretsproviderclass.yaml
 
           # setup rbac
-          kubectl apply -f k8s-manifests/secrets-store-rbac.yaml
+          kubectl apply -f secrets-store-rbac.yaml
           
           # deploy
-          kubectl apply -f  k8s-manifests/deployment.yaml
+          kubectl apply -f  deployment.yaml
 
           # expose service loadblancer
           kubectl apply -f service.yaml
