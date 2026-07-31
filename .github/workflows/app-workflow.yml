@@ -57,13 +57,26 @@ jobs:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
 
-      - name: Deploy new image
+      - name: Deploy application
         run: |
-          kubectl set image deployment/learningsteps-api \
-            learningsteps-api=${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }} \
-            -n learningsteps
+          
+          # set up name space
+          kubectl apply -f k8s-manifests/namsespace.yaml
+          
+          # setup secrets
+          kubectl apply -f k8s-manifests/secretsproviderclass.yaml
+
+          # setup rbac
+          kubectl apply -f k8s-manifests/secrets-store-rbac.yaml
+          
+          # deploy
+          kubectl apply -f  k8s-manifests/deployment.yaml
+
+          # expose service loadblancer
+          kubectl apply -f service.yaml
 
       - name: Verify rollout
         run: |
           kubectl rollout status deployment/learningsteps-api \
-            -n learningsteps
+            -n learningsteps     
+      
