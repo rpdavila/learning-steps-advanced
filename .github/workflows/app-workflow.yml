@@ -56,17 +56,17 @@ jobs:
         with:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
-      - name: Check files
-        run: |
-          pwd
-          ls -la
-          find . -maxdepth 3 -type f
+      
       - name: Checkout Kubernetes Manifests
         uses: actions/checkout@v5
         with:
           repository: rpdavila/learning-steps-advanced 
           path: k8s-manifsts
-
+      - name: Check files
+        run: |
+          pwd
+          ls -la
+          find . -maxdepth 3 -type f
       - name: Deploy application
         run: |          
           # set up name space
