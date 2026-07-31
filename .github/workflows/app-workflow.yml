@@ -82,5 +82,5 @@ jobs:
         run: |
           kubectl rollout status deployment/learningsteps-api \
             -n learningsteps \
-            --timout=15m    
+            --timeout=15m    
       
