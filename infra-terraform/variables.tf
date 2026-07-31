@@ -20,7 +20,7 @@ variable "postgres_user" {
 }
 
 variable "postgres_password" {
-  type    = string
+  type      = string
   sensitive = true
 }
 

@@ -6,11 +6,11 @@ terraform {
     }
 
     time = {
-      source = "hashicorp/time"
+      source  = "hashicorp/time"
       version = "~> 0.14.0"
 
     }
-  } 
+  }
 
   required_version = ">= 1.1.0"
 }
@@ -67,64 +67,64 @@ resource "azurerm_subnet" "Postgresql_subnet" {
 
 # rbac time delay
 resource "time_sleep" "wait_for_rbac" {
-  depends_on = [ azurerm_role_assignment.rbac_akv ]
+  depends_on      = [azurerm_role_assignment.rbac_akv]
   create_duration = "60s"
 }
 
 # create postgreSQL security group 
 resource "azurerm_network_security_group" "postgres_nsg" {
-  name = "NSG_for_PostgreSQL"
-  location = azurerm_resource_group.rg.location
+  name                = "NSG_for_PostgreSQL"
+  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 # associate to postgres subnet
 resource "azurerm_subnet_network_security_group_association" "postgres" {
-  subnet_id = azurerm_subnet.Postgresql_subnet.id
+  subnet_id                 = azurerm_subnet.Postgresql_subnet.id
   network_security_group_id = azurerm_network_security_group.postgres_nsg.id
 }
 
 # security group for AKS_subnet
 resource "azurerm_network_security_group" "aks_nsg" {
-  name = "NSG_for_AKS_Subnet"
-  location = azurerm_resource_group.rg.location
+  name                = "NSG_for_AKS_Subnet"
+  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 resource "azurerm_subnet_network_security_group_association" "aks-postgres" {
-  subnet_id = azurerm_subnet.aks_subnet.id
+  subnet_id                 = azurerm_subnet.aks_subnet.id
   network_security_group_id = azurerm_network_security_group.aks_nsg.id
 }
 
 #inbound rules aks-postgres
 resource "azurerm_network_security_rule" "aks-lb-inbound" {
-  name = "Allow-AzureLoadBalancer"
-  priority = 100
+  name      = "Allow-AzureLoadBalancer"
+  priority  = 100
   direction = "Inbound"
-  access = "Allow"
-  protocol = "*"
+  access    = "Allow"
+  protocol  = "*"
 
-  source_address_prefix = "AzureLoadBalancer"
+  source_address_prefix      = "AzureLoadBalancer"
   destination_address_prefix = "*"
-  source_port_range = "*"
-  destination_port_range = "30000-32767"
+  source_port_range          = "*"
+  destination_port_range     = "30000-32767"
 
-  resource_group_name = azurerm_resource_group.rg.name
+  resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
 }
 
 resource "azurerm_network_security_rule" "aks_node_communication" {
-  name                        = "Allow-AKS-Nodes"
-  priority                    = 110
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "*"
+  name      = "Allow-AKS-Nodes"
+  priority  = 110
+  direction = "Inbound"
+  access    = "Allow"
+  protocol  = "*"
 
-  source_address_prefix       = "10.0.0.0/24"
-  destination_address_prefix  = "10.0.0.0/24"
+  source_address_prefix      = "10.0.0.0/24"
+  destination_address_prefix = "10.0.0.0/24"
 
-  source_port_range           = "*"
-  destination_port_range      = "*"
+  source_port_range      = "*"
+  destination_port_range = "*"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
@@ -132,17 +132,17 @@ resource "azurerm_network_security_rule" "aks_node_communication" {
 
 # outbound rules aks-postgres
 resource "azurerm_network_security_rule" "aks_to_postgres" {
-  name                        = "Allow-Postgres"
-  priority                    = 100
-  direction                   = "Outbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-Postgres"
+  priority  = 100
+  direction = "Outbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "10.0.0.0/24"
-  destination_address_prefix  = "10.0.1.0/24"
+  source_address_prefix      = "10.0.0.0/24"
+  destination_address_prefix = "10.0.1.0/24"
 
-  source_port_range           = "*"
-  destination_port_range      = "5432"
+  source_port_range      = "*"
+  destination_port_range = "5432"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
@@ -150,51 +150,51 @@ resource "azurerm_network_security_rule" "aks_to_postgres" {
 
 # Allow communication to services like Keyvault,ACR image pulls, Azure-apis, Monitoring, Kubernetes Services
 resource "azurerm_network_security_rule" "aks_to_ACR" {
-  name                        = "Allow-AKS-Out"
-  priority                    = 110
-  direction                   = "Outbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-AKS-Out"
+  priority  = 110
+  direction = "Outbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "*"
-  destination_address_prefix  = "AzureContainerRegistry"
+  source_address_prefix      = "*"
+  destination_address_prefix = "AzureContainerRegistry"
 
-  source_port_range           = "*"
-  destination_port_range      = "443"
+  source_port_range      = "*"
+  destination_port_range = "443"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
 }
 
 resource "azurerm_network_security_rule" "aks_to_monitor" {
-  name                        = "Allow-AKS-To-AzureMonitor"
-  priority                    = 130
-  direction                   = "Outbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-AKS-To-AzureMonitor"
+  priority  = 130
+  direction = "Outbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "*"
-  destination_address_prefix  = "AzureMonitor"
+  source_address_prefix      = "*"
+  destination_address_prefix = "AzureMonitor"
 
-  source_port_range           = "*"
-  destination_port_range      = "443"
+  source_port_range      = "*"
+  destination_port_range = "443"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
 }
 
 resource "azurerm_network_security_rule" "aks_to_azurecloud" {
-  name                        = "Allow-Azure-Cloud"
-  priority                    = 140
-  direction                   = "Outbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-Azure-Cloud"
+  priority  = 140
+  direction = "Outbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "*"
-  destination_address_prefix  = "AzureCloud"
+  source_address_prefix      = "*"
+  destination_address_prefix = "AzureCloud"
 
-  source_port_range           = "*"
-  destination_port_range      = "443"
+  source_port_range      = "*"
+  destination_port_range = "443"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
@@ -202,34 +202,34 @@ resource "azurerm_network_security_rule" "aks_to_azurecloud" {
 
 # inbound rule only allow from aks dany everything else
 resource "azurerm_network_security_rule" "postgres_from_aks" {
-  name                        = "Allow-AKS-To-Postgres"
-  priority                    = 100
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-AKS-To-Postgres"
+  priority  = 100
+  direction = "Inbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "10.0.0.0/24"
-  destination_address_prefix  = "10.0.1.0/24"
+  source_address_prefix      = "10.0.0.0/24"
+  destination_address_prefix = "10.0.1.0/24"
 
-  source_port_range           = "*"
-  destination_port_range      = "5432"
+  source_port_range      = "*"
+  destination_port_range = "5432"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.postgres_nsg.name
 }
 
 resource "azurerm_network_security_rule" "aks_http_inbound" {
-  name                        = "Allow-HTTP-Internet"
-  priority                    = 120
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
+  name      = "Allow-HTTP-Internet"
+  priority  = 120
+  direction = "Inbound"
+  access    = "Allow"
+  protocol  = "Tcp"
 
-  source_address_prefix       = "Internet"
-  destination_address_prefix  = "*"
+  source_address_prefix      = "Internet"
+  destination_address_prefix = "*"
 
-  source_port_range           = "*"
-  destination_port_range      = "80"
+  source_port_range      = "*"
+  destination_port_range = "80"
 
   resource_group_name         = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name

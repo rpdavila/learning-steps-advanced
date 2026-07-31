@@ -4,8 +4,8 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = "learning-dev-k8s"
   kubernetes_version  = "1.34"
-    api_server_access_profile {
-    authorized_ip_ranges = [ "93.222.255.160/32" ]
+  api_server_access_profile {
+    authorized_ip_ranges = ["93.222.255.160/32"]
   }
   identity {
     type = "SystemAssigned"
@@ -23,7 +23,7 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   network_profile {
     network_plugin = "azure"
     network_policy = "azure"
-    service_cidr = "10.2.0.0/16"
+    service_cidr   = "10.2.0.0/16"
     dns_service_ip = "10.2.0.10"
   }
 
