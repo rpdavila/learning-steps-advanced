@@ -107,7 +107,7 @@ resource "azurerm_network_security_rule" "aks-lb-inbound" {
   source_address_prefix = "AzureLoadBalancer"
   destination_address_prefix = "*"
   source_port_range = "*"
-  destination_port_range = "*"
+  destination_port_range = "30000-32767"
 
   resource_group_name = azurerm_resource_group.rg.name
   network_security_group_name = azurerm_network_security_group.aks_nsg.name
@@ -218,6 +218,19 @@ resource "azurerm_network_security_rule" "postgres_from_aks" {
   network_security_group_name = azurerm_network_security_group.postgres_nsg.name
 }
 
+resource "azurerm_network_security_rule" "aks_http_inbound" {
+  name                        = "Allow-HTTP-Internet"
+  priority                    = 120
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
 
+  source_address_prefix       = "Internet"
+  destination_address_prefix  = "*"
 
+  source_port_range           = "*"
+  destination_port_range      = "80"
 
+  resource_group_name         = azurerm_resource_group.rg.name
+  network_security_group_name = azurerm_network_security_group.aks_nsg.name
+}

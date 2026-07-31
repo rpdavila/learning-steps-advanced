@@ -9,6 +9,10 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     type = "SystemAssigned"
   }
 
+  key_vault_secrets_provider {
+    secret_rotation_enabled = true
+  }
+
   default_node_pool {
     name            = "lsnodepool"
     node_count      = 2
