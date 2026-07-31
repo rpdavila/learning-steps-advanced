@@ -61,24 +61,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: rpdavila/learning-steps-advanced 
-          path: k8s-manifests
+          path: learning-steps-advanced
 
       - name: Deploy application
         run: |          
-          # set up name space
-          kubectl apply -f namespace.yaml
-          
-          # setup secrets
-          kubectl apply -f secretsproviderclass.yaml
-
-          # setup rbac
-          kubectl apply -f secrets-store-rbac.yaml
-          
-          # deploy
-          kubectl apply -f  deployment.yaml
-
-          # expose service loadblancer
-          kubectl apply -f service.yaml
+         kubectl apply -f k8s-manifests/
 
       - name: Verify rollout
         run: |
