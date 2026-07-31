@@ -65,7 +65,20 @@ jobs:
 
       - name: Deploy application
         run: |          
-         kubectl apply -f k8s-manifests/
+          # set up name space
+          kubectl apply -f k8s-manifests/namespace.yaml
+          
+          # setup secrets
+          kubectl apply -f k8s-manifests/secretsproviderclass.yaml
+
+          # setup rbac
+          kubectl apply -f k8s-manifests/secrets-store-rbac.yaml
+          
+          # deploy
+          kubectl apply -f  k8s-manifests/deployment.yaml
+
+          # expose service loadblancer
+          kubectl apply -f k8s-manifests/service.yaml
 
       - name: Verify rollout
         run: |
