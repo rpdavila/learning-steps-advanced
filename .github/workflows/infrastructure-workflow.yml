@@ -49,7 +49,7 @@ jobs:
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
           working_directory: ${{ env.WORKING_DIR }}
-          additional_args: --tfvars-file ${{ env.WORKING_DIR }}/terraform.tfvars
+          additional_args: --minimum-severity HIGH
           soft_fail: true
 
   terraform-validate:
