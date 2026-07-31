@@ -6,6 +6,11 @@ resource "azurerm_key_vault" "akv" {
   tenant_id = var.tennant_id
   soft_delete_retention_days = 90
   rbac_authorization_enabled = true
+
+  network_acls {
+    default_action = "Deny"
+    bypass = "AzureServices"
+  }
 }
 
 resource "azurerm_role_assignment" "rbac_akv" {
