@@ -57,9 +57,14 @@ jobs:
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
 
+      - name: Checkout Kubernetes Manifests
+        uses: actions/checkout@v5
+        with:
+          repository: rpdavila/learning-steps-advanced 
+          path: k8s-manifests
+
       - name: Deploy application
-        run: |
-          
+        run: |          
           # set up name space
           kubectl apply -f k8s-manifests/namespace.yaml
           
