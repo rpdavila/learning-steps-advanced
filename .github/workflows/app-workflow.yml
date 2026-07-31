@@ -5,6 +5,9 @@ on:
       - main
       - master
   workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
@@ -40,6 +43,7 @@ jobs:
         if: success()
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }}
+
       - name: Login with Azure Login
         uses: Azure/Login@v2
         with:
