@@ -4,19 +4,15 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = "learning-dev-k8s"
   kubernetes_version  = "1.34"
-
+    api_server_access_profile {
+    authorized_ip_ranges = [ "93.222.255.160/32" ]
+  }
   identity {
     type = "SystemAssigned"
   }
-
-   api_server_access_profile {
-    authorized_ip_ranges = [ "93.222.255.160/32" ]
-  }
-
   key_vault_secrets_provider {
     secret_rotation_enabled = true
   }
-
   default_node_pool {
     name            = "lsnodepool"
     node_count      = 2
@@ -24,7 +20,6 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     os_disk_size_gb = 30
     vnet_subnet_id  = azurerm_subnet.aks_subnet.id
   }
-
   network_profile {
     network_plugin = "azure"
     network_policy = "azure"
