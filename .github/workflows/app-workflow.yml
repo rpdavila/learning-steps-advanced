@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -39,3 +40,20 @@ jobs:
         if: success()
         run: |
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }}
+      
+      - name: Set AKS Context
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
+
+      - name: Deploy new image
+        run: |
+          kubectl set image deployment/learningsteps-api \
+            learningsteps-api=${{ secrets.ACR_LOGIN_SERVER }}/learningsteps:${{ github.sha }} \
+            -n learningsteps
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/learningsteps-api \
+            -n learningsteps
