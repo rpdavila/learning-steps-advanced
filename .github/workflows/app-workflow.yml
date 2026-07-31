@@ -1,5 +1,4 @@
 name: LearningSteps CD
-
 on:
   push:
     branches:
