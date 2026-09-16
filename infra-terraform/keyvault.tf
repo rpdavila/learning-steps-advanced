@@ -10,6 +10,10 @@ resource "azurerm_key_vault" "akv" {
   network_acls {
     default_action = "Deny"
     bypass         = "AzureServices"
+    # The CI runner writes azurerm_key_vault_secret over the Key Vault data
+    # plane, which "Deny" blocks regardless of RBAC. Supplied per-run as
+    # TF_VAR_keyvault_allowed_ip.
+    ip_rules = [var.keyvault_allowed_ip]
   }
 }
 

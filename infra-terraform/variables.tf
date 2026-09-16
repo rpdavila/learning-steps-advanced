@@ -1,17 +1,11 @@
 variable "environment" {
-  type = string
-}
-
-variable "appid" {
-  type = string
-}
-
-variable "password" {
-  type = string
+  type    = string
+  default = "dev"
 }
 
 variable "owner" {
-  type = string
+  type    = string
+  default = "RPD"
 }
 
 variable "postgres_user" {
@@ -33,6 +27,7 @@ variable "tennant_id" {
   type = string
 }
 
-variable "service_principal_id" {
-  type = string
+variable "keyvault_allowed_ip" {
+  description = "Public IP allowed through the Key Vault firewall (the CI runner)"
+  type        = string
 }

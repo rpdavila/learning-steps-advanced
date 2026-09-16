@@ -35,17 +35,12 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
   }
 }
 
-resource "azurerm_role_assignment" "aks_cluster_keyvault_secret_user" {
-  principal_id         = azurerm_kubernetes_cluster.aks_cluster.identity[0].principal_id
+# The Secrets Store CSI driver reads Key Vault as the secrets-provider addon
+# identity -- not the control-plane or kubelet identity. Granting the wrong
+# principal makes the secret mount fail with 403 at pod start.
+resource "azurerm_role_assignment" "aks_kv_secrets_provider" {
+  principal_id         = azurerm_kubernetes_cluster.aks_cluster.key_vault_secrets_provider[0].secret_identity[0].object_id
   role_definition_name = "Key Vault Secrets User"
   scope                = azurerm_key_vault.akv.id
-  depends_on           = [azurerm_kubernetes_cluster.aks_cluster]
-}
-
-resource "azurerm_role_assignment" "aks_keyvault_secret_user" {
-  principal_id         = azurerm_kubernetes_cluster.aks_cluster.kubelet_identity[0].object_id
-  role_definition_name = "Key Vault Secrets User"
-  scope                = azurerm_key_vault.akv.id
-  depends_on           = [azurerm_kubernetes_cluster.aks_cluster]
 }
 

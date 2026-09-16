@@ -17,10 +17,10 @@ resource "azurerm_postgresql_flexible_server" "postgresql" {
   depends_on = [azurerm_private_dns_zone_virtual_network_link.vnl]
 }
 
-resource "azurerm_postgresql_flexible_server_firewall_rule" "example" {
-  name             = "Firewall-for-postgresql"
-  server_id        = azurerm_postgresql_flexible_server.postgresql.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+resource "azurerm_postgresql_flexible_server_database" "db" {
+  name      = var.postgres_db_name
+  server_id = azurerm_postgresql_flexible_server.postgresql.id
+  collation = "en_US.utf8"
+  charset   = "utf8"
 }
 

@@ -18,12 +18,14 @@ on:
       terraform_version:
         description: "Terraform version to use"
         required: false
-        default: "1.14.4"
+        default: "1.15.8"
         type: string
 
 env:
   WORKING_DIR: infra-terraform
-  TF_VERSION: ${{ inputs.terraform_version || '1.14.4' }}
+  # Must be >= the version that last wrote the remote state (1.15.8).
+  # Terraform refuses to read state written by a newer version.
+  TF_VERSION: ${{ inputs.terraform_version || '1.15.8' }}
 
 jobs:
   # ============================================
@@ -91,9 +93,8 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-      TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      TF_VAR_postgresql_admin_password: ${{ secrets.POSTGRESQL_ADMIN_PASSWORD }}
-      TF_VAR_appid: ${{ secrets.APP_ID }}
+      TF_VAR_postgres_password: ${{ secrets.POSTGRESQL_ADMIN_PASSWORD }}
+      TF_VAR_tennant_id: ${{ secrets.ARM_TENANT_ID }}
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
@@ -106,16 +107,19 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Allow this runner through the Key Vault firewall
+        run: echo "TF_VAR_keyvault_allowed_ip=$(curl -sf --max-time 10 https://api.ipify.org)" >> "$GITHUB_ENV"
+
       - name: Terraform Init
         run: |
           terraform init \
             -backend-config="resource_group_name=${{ secrets.BACKEND_RESOURCE_GROUP }}" \
             -backend-config="storage_account_name=${{ secrets.BACKEND_STORAGE_ACCOUNT }}" \
             -backend-config="container_name=${{ secrets.BACKEND_CONTAINER_NAME }}" \
-            -backend-config="key=learningsteps.tfstate"   
+            -backend-config="key=learningsteps.tfstate"
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        run: terraform plan -input=false -out=tfplan
 
       - name: Upload Plan
         uses: actions/upload-artifact@v4
@@ -134,9 +138,8 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-      TF_VAR_subscription_id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      TF_VAR_postgresql_admin_password: ${{ secrets.POSTGRESQL_ADMIN_PASSWORD }}
-      TF_VAR_appid: ${{ secrets.APP_ID }}
+      TF_VAR_postgres_password: ${{ secrets.POSTGRESQL_ADMIN_PASSWORD }}
+      TF_VAR_tennant_id: ${{ secrets.ARM_TENANT_ID }}
     defaults:
       run:
         working-directory: ${{ env.WORKING_DIR }}
@@ -149,21 +152,22 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
 
+      - name: Allow this runner through the Key Vault firewall
+        run: echo "TF_VAR_keyvault_allowed_ip=$(curl -sf --max-time 10 https://api.ipify.org)" >> "$GITHUB_ENV"
+
       - name: Terraform Init
         run: |
           terraform init \
             -backend-config="resource_group_name=${{ secrets.BACKEND_RESOURCE_GROUP }}" \
             -backend-config="storage_account_name=${{ secrets.BACKEND_STORAGE_ACCOUNT }}" \
             -backend-config="container_name=${{ secrets.BACKEND_CONTAINER_NAME }}" \
-            -backend-config="key=terraform.tfstate"
+            -backend-config="key=learningsteps.tfstate"
 
-      - name: Download Plan
-        uses: actions/download-artifact@v4
-        with:
-          name: tfplan
-          path: ${{ env.WORKING_DIR }}
-
+      # Re-planned here rather than applying the plan job's artifact: the Key
+      # Vault ip_rules are pinned to whichever runner produced the plan, and
+      # this job runs on a different runner with a different egress IP.
       - name: Terraform Plan
         run: terraform plan -input=false -out=tfplan
+
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
