@@ -7,12 +7,18 @@ on:
       - master
     paths:
       - "infra-terraform/**"
+      # Changes to this pipeline must also trigger it, otherwise a fix to the
+      # workflow never runs and only a manual dispatch picks it up.
+      - ".github/workflows/infrastructure-workflow.yml"
   pull_request:
     branches:
       - main
       - master
     paths:
       - "infra-terraform/**"
+      # Changes to this pipeline must also trigger it, otherwise a fix to the
+      # workflow never runs and only a manual dispatch picks it up.
+      - ".github/workflows/infrastructure-workflow.yml"
   workflow_dispatch:
     inputs:
       terraform_version:
