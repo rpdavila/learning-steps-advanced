@@ -23,6 +23,11 @@ resource "azurerm_role_assignment" "rbac_akv" {
   scope                = azurerm_key_vault.akv.id
 }
 
+import {
+  to = azurerm_key_vault_secret.akv_secret
+  id = "https://learning-steps-key-vault.vault.azure.net/secrets/learning-steps-secret/df0c76b99875449d884a2fac41565557"
+}
+
 resource "azurerm_key_vault_secret" "akv_secret" {
   name         = "learning-steps-secret"
   key_vault_id = azurerm_key_vault.akv.id
