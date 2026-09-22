@@ -13,7 +13,10 @@ resource "azurerm_key_vault" "akv" {
     # The CI runner writes azurerm_key_vault_secret over the Key Vault data
     # plane, which "Deny" blocks regardless of RBAC. Supplied per-run as
     # TF_VAR_keyvault_allowed_ip.
-    ip_rules = [var.keyvault_allowed_ip]
+    ip_rules = [
+      var.keyvault_allowed_ip,
+      data.azurerm_public_ip.aks_egress.ip_address,
+    ]
   }
 }
 
@@ -21,11 +24,6 @@ resource "azurerm_role_assignment" "rbac_akv" {
   principal_id         = data.azurerm_client_config.current.object_id
   role_definition_name = "Key Vault Secrets Officer"
   scope                = azurerm_key_vault.akv.id
-}
-
-import {
-  to = azurerm_key_vault_secret.akv_secret
-  id = "https://learning-steps-key-vault.vault.azure.net/secrets/learning-steps-secret/df0c76b99875449d884a2fac41565557"
 }
 
 resource "azurerm_key_vault_secret" "akv_secret" {

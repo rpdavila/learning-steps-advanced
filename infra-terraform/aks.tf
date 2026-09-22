@@ -25,6 +25,12 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
     network_policy = "azure"
     service_cidr   = "10.2.0.0/16"
     dns_service_ip = "10.2.0.10"
+
+    # Pinned so effective_outbound_ips is populated deterministically in state.
+    # Matches the single managed IP AKS already allocates.
+    load_balancer_profile {
+      managed_outbound_ip_count = 1
+    }
   }
 
   role_based_access_control_enabled = true
@@ -44,3 +50,10 @@ resource "azurerm_role_assignment" "aks_kv_secrets_provider" {
   scope                = azurerm_key_vault.akv.id
 }
 
+# The Secrets Store CSI driver reads Key Vault from the cluster's egress IP.
+# bypass = "AzureServices" does not cover AKS node egress, so the vault
+# firewall has to allow this address explicitly.
+data "azurerm_public_ip" "aks_egress" {
+  name                = reverse(split("/", tolist(azurerm_kubernetes_cluster.aks_cluster.network_profile[0].load_balancer_profile[0].effective_outbound_ips)[0]))[0]
+  resource_group_name = azurerm_kubernetes_cluster.aks_cluster.node_resource_group
+}
