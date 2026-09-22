@@ -101,7 +101,17 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Allow this runner through the Key Vault firewall
-        run: echo "TF_VAR_keyvault_allowed_ip=$(curl -sf --max-time 10 https://api.ipify.org)" >> "$GITHUB_ENV"
+        run: |
+          IP=$(curl -sf --max-time 10 https://api.ipify.org)
+          echo "TF_VAR_keyvault_allowed_ip=$IP" >> "$GITHUB_ENV"
+          az login --service-principal \
+            -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" -t "$ARM_TENANT_ID" --output none
+          az account set --subscription "$ARM_SUBSCRIPTION_ID"
+          if az keyvault show -n learning-steps-key-vault -g ProjectLearningSteps --output none 2>/dev/null; then
+            az keyvault network-rule add -n learning-steps-key-vault \
+              -g ProjectLearningSteps --ip-address "$IP" --output none
+            sleep 15
+          fi
 
       - name: Terraform Init
         run: |
@@ -146,7 +156,17 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
 
       - name: Allow this runner through the Key Vault firewall
-        run: echo "TF_VAR_keyvault_allowed_ip=$(curl -sf --max-time 10 https://api.ipify.org)" >> "$GITHUB_ENV"
+        run: |
+          IP=$(curl -sf --max-time 10 https://api.ipify.org)
+          echo "TF_VAR_keyvault_allowed_ip=$IP" >> "$GITHUB_ENV"
+          az login --service-principal \
+            -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" -t "$ARM_TENANT_ID" --output none
+          az account set --subscription "$ARM_SUBSCRIPTION_ID"
+          if az keyvault show -n learning-steps-key-vault -g ProjectLearningSteps --output none 2>/dev/null; then
+            az keyvault network-rule add -n learning-steps-key-vault \
+              -g ProjectLearningSteps --ip-address "$IP" --output none
+            sleep 15
+          fi
 
       - name: Terraform Init
         run: |
